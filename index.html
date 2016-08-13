@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,height=device-height,inital-scale=1.0,maximum-scale=1.0,user-scalable=no;" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="format-detection" content="telephone=no">
+</head>
+<style type="text/css">
+/**{margin: 0px;padding: 0px;border:0px;}
+ul,li{list-style-type: none;}
+a{-webkit-tap-highlight-color:rgba(0,0,0,0);}
+.coupon-list{width: 100%;}
+.coupon-list li{width: 100%;height: 30px;line-height: 30px;text-indent: 10px;color: #333;text-overflow: ellipsis;white-space: nowrap;overflow: hidden;}
+.coupon-list li:nth-child(odd){background: #ccc;}
+.coupon-list li:nth-child(even){background: #eee;}
+.btn{width: 100%;height: 30px;line-height: 30px;text-align: center;color: #fff;background: #333;}
+.btn a{color: inherit;display: block;}
+.load{background: url("load.gif") no-repeat center center #333;background-size: 20px auto;color:transparent;}
+*/
+
+
+*{ margin:0; padding:0; list-style:none; font-size:14px;}
+.coupon-list{ border-top:1px solid #ddd;}
+.coupon-list li{ padding-left:12px; line-height:30px; border-bottom:1px solid #ddd;}
+/* 滚动条插件 */
+.iscroll-box { position:absolute; z-index:1;top:0px; bottom:0px; left:0;width:100%;overflow:auto;}
+.iscroll-box.z-index{ z-index:80; opacity:1;}
+.iscroll-box .scroller{position:absolute; z-index:1;-webkit-tap-highlight-color:rgba(0,0,0,0);width:100%;padding:0;}
+.iscroll-box div[data-pull]{ display:block;height:40px; line-height:40px; text-align:center;color:#666;}
+.iscroll-box div[data-pull=up]:before{ content:"上拉加载更多数据";}
+.iscroll-box div[data-pull=up].loading:before,.iscroll-box div[data-pull=up].flip:before{content:"正在拼命加载中...";}
+.iscroll-box div[data-pull=up].end:before{ content:"已经加载所有数据";}
+.iscroll-box div[data-pull=down]:before{content:"下拉更新数据";}
+.iscroll-box div[data-pull=down].loading:before,.iscroll-box div[data-pull=down].flip:before{content:"正在更新中...";}
+.iscroll-box div[data-pull=down].end:before{ content:"已经加载所有数据";}
+</style>
+<body>
+<div id="iscroll-box" class="iscroll-box" data-index="0">
+	<div class="scroller">
+		<div data-pull="down"></div>
+		<ul class="coupon-list clearfix">
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>魔兽奇偶偶查查</li>  
+			<li>1.魔兽奇偶偶查查</li>  
+	        <li>2.四川省非积分是父母是开发</li>   
+	        <li>3.已经加载所有数据</li>   
+	        <li>4.四川省非积分是父母是开发</li>   
+	        <li>5.下拉更新数据</li>   
+	        <li>6.四川省非积分是父母是开发</li>   
+	        <li>7.习近平同波兰总统杜达举行会晤</li>   
+	        <li>8.四川省非积分是父母是开发</li>   
+	        <li>9.田纪云:依法治国重在依法治官 而不是治老百姓</li> 
+	        <li>10.四川省非积分是父母是开发</li> 
+
+		</ul>
+		<div data-pull="up"></div>
+	</div>
+</div>
+<script type="text/javascript" src="jquery-1.8.0.min.js"></script>
+<script src="iscroll.js"></script>
+<script type="text/javascript">
+	
+
+//滚动条加载
+var myScroll,pullUpEl,pullDownEl,pullUpOffset=0,pullDownOffset=0,pullUpLabel;
+//获取json数据
+var coupon_obj={
+	num:10,              //每次加载的json条数
+	page:2,				//页码
+	_switch:true,		//判断结束的布尔参数
+	update:true		    //是否有更新回调
+};
+
+// 下拉更新回调:如果更新发现还找出6条数据，就删除.end
+function pullAction (isDown) {
+	if(coupon_obj._switch){	  //判断加载全部后，控制不能再滚动回调加载数据
+		setTimeout(function () {
+			AddAjax(isDown)
+		}, 1000);	
+	}
+}
+function AddAjax(isDown){
+	var arr,nomore;
+	$.ajax({
+		type:'post',
+		url:'data.php', 
+		data:{"page":coupon_obj.page,"num":coupon_obj.num},
+		success:function(data){
+			console.log(data);
+			arr = eval('(' + data + ')');
+			if(isDown)
+			{
+				$(".coupon-list").prepend(arr.string);
+			}
+			else
+			{
+				$(".coupon-list").append(arr.string);
+			}
+			nomore=arr.nomore;
+			myScroll.refresh();	//重新计算滚动条
+			if(nomore){		//后台返回：msg.switchs 布尔值。判断是否达到最后一页数据
+				coupon_obj._switch=false;			//如果是，关闭滚动回调，不再加载
+				pullDownEl.addClass("end");
+				pullUpEl.addClass("end");
+			}
+		},
+		error: function(){
+			console.log("ajax错误")	
+		},
+		beforeSend:function(XMLHttpRequest){	
+			coupon_obj.page++;
+			if(coupon_obj.page-1)
+			{
+				if(nomore)
+				{
+					return false;
+				}
+			}
+		}, 
+	})
+}
+
+pullDownEl = $("div[data-pull=down]");	
+pullUpEl = $("div[data-pull=up]");	
+pullUpOffset = pullUpEl.innerHeight();
+coupon_obj.update ? pullDownOffset = pullDownEl.innerHeight():pullDownEl.hide();
+
+myScroll= new iScroll("iscroll-box", {                 
+	topOffset: pullDownOffset,
+	onRefresh: function () {
+		if (pullDownEl.hasClass('loading')) {
+			pullDownEl.removeAttr("class");
+		}else if (pullUpEl.hasClass('loading')) {
+			pullUpEl.removeAttr("class");
+		}
+	},
+	onScrollMove: function () {
+		if (this.y > 5 && !pullDownEl.hasClass('flip')) {
+			if(pullDownEl.hasClass("end")) {return false;}
+			if(!coupon_obj.update) return false;
+			pullDownEl.removeAttr("class").addClass("flip");
+			this.minScrollY = 0;
+		}else if(this.y < 5 && pullDownEl.hasClass('flip')) {
+			if(!coupon_obj.update) return false;
+			pullDownEl.removeAttr("class");
+			this.minScrollY = -pullDownOffset;
+			return false;
+		}else if(this.y < (this.maxScrollY - 5) && !pullUpEl.hasClass('flip') && this.y<-pullDownOffset) {
+			if(pullUpEl.hasClass("end")) return false;
+			pullUpEl.removeAttr("class").addClass('flip');
+			this.maxScrollY = this.maxScrollY;
+		} else if(this.y > (this.maxScrollY + 5) && pullUpEl.hasClass('flip') && this.y<-pullDownOffset) {
+			pullUpEl.removeAttr("class");
+			this.maxScrollY = pullUpOffset;
+		}
+		
+	},
+	onScrollEnd: function () {
+		if (pullDownEl.hasClass('flip')) {
+			if(!coupon_obj.update) return false;
+			pullDownEl.removeAttr("class").addClass('loading');
+			pullAction(true);									// 下拉更新回调
+		}else if (pullUpEl.hasClass('flip')) {
+			if(pullUpEl.hasClass("end")) return false;
+			pullUpEl.removeAttr("class").addClass("loading");	
+			pullAction(false);										   // 上拉加载回调
+		}
+	}
+});
+document.addEventListener('touchmove', function (e) { e.preventDefault(); }, false);
+
+
+
+
+
+
+
+// 	function addAjax(){
+// 		var arr;
+// 		$.ajax({
+// 			url:"data.php",
+// 			type:"post",					
+// 			data:{"page":page},						//传入后台数据{"aa":"11","bb":"22"}
+// 			dataType:"text",                    
+// 			success:function(data, textStatus){
+// 						console.log(data);
+// 						arr = eval('(' + data + ')');
+// 						nomore=arr.nomore;
+// 						$(".btn").before(arr.string);
+// 						$(".btn").removeClass('load');
+// 						if(nomore)
+// 						{
+// 							$(".btn").remove();
+// 						}
+// 					},
+// 			error:function(XMLHttpRequest, textStatus, errorThrown){
+// 						alert("请求错误");
+// 					},
+// 			beforeSend:function(XMLHttpRequest){	
+// 							$(".btn").addClass('load');
+// 							page=page+1;
+// 							if(page-1)
+// 							{
+// 								if(nomore)
+// 								{
+// 									return false;
+// 								}
+// 							}
+// 						}, 
+// 			// complete:function(XMLHttpRequest, textStatus){
+						
+// 			// 		},		
+// 			// dataFilter:function(data, type){
+// 			// 				return data;
+// 			// 			},
+// 			// ifModified:"",
+// 			// username:"",
+// 			// password:"",
+// 			// processData:"",
+// 			// scriptCharset:"",
+// 			// timeout:"",	
+// 			// async:"true",
+// 			// contentType:"",
+// 			// global:"true",
+// 			// ifModified:"",
+// 			// jsonp:"",
+// 			// cache:"true",	
+// 		})
+
+
+// url:    	要求为String类型的参数，（默认为当前页地址）发送请求的地址。
+// type:   	要求为String类型的参数，请求方式（post或get）默认为get。注意其他http请求方法，例如put和
+//         	delete也可以使用，但仅部分浏览器支持。
+// cache：	要求为Boolean类型的参数，默认为true（当dataType为script时，默认为false）。
+//        	设置为false将不会从浏览器缓存中加载请求信息。
+// data: 	要求为Object或String类型的参数，发送到服务器的数据。如果已经不是字符串，将自动转换为字符串格
+//       	式。get请求中将附加在url后。防止这种自动转换，可以查看processData选项。对象必须为key/value格
+//       	式，例如{foo1:"bar1",foo2:"bar2"}转换为&foo1=bar1&foo2=bar2。如果是数组，JQuery将自动为不同
+//       	值对应同一个名称。例如{foo:["bar1","bar2"]}转换为&foo=bar1&foo=bar2。
+// dataType: 要求为String类型的参数，预期服务器返回的数据类型。如果不指定，JQuery将自动根据http包mime
+//           信息返回responseXML或responseText，并作为回调函数参数传递。
+//           可用的类型如下：
+//           xml：返回XML文档，可用JQuery处理。
+//           html：返回纯文本HTML信息；包含的script标签会在插入DOM时执行。
+//           script：返回纯文本JavaScript代码。不会自动缓存结果。除非设置了cache参数。注意在远程请求
+//                   时（不在同一个域下），所有post请求都将转为get请求。
+//           json：返回JSON数据。
+//           jsonp：JSONP格式。使用SONP形式调用函数时，例如myurl?callback=?，JQuery将自动替换后一个
+//                 “?”为正确的函数名，以执行回调函数。
+//           text：返回纯文本字符串。
+// beforeSend：	要求为Function类型的参数，发送请求前可以修改XMLHttpRequest对象的函数，例如添加自定义
+//             	HTTP头。在beforeSend中如果返回false可以取消本次ajax请求。XMLHttpRequest对象是惟一的参
+//             	数。
+//             	function(XMLHttpRequest){
+//                this;   //调用本次ajax请求时传递的options参数
+//            	}
+// complete：	要求为Function类型的参数，请求完成后调用的回调函数（请求成功或失败时均调用）。
+//           	参数：XMLHttpRequest对象和一个描述成功请求类型的字符串。
+//           	function(XMLHttpRequest, textStatus){
+//              	this;    //调用本次ajax请求时传递的options参数
+//           	}
+// success：	要求为Function类型的参数，请求成功后调用的回调函数，有两个参数。
+//          	(1)由服务器返回，并根据dataType参数进行处理后的数据。
+//          	(2)描述状态的字符串。
+//          	function(data, textStatus){
+//             		//data可能是xmlDoc、jsonObj、html、text等等
+//             		this;  //调用本次ajax请求时传递的options参数
+// error：	要求为Function类型的参数，请求失败时被调用的函数。该函数有3个参数，即XMLHttpRequest对象、错
+//        	误信息、捕获的错误对象(可选)。
+//        	ajax事件函数如下：
+//        	function(XMLHttpRequest, textStatus, errorThrown){
+//           	//通常情况下textStatus和errorThrown只有其中一个包含信息
+//           	this;   //调用本次ajax请求时传递的options参数
+//        	}
+// contentType：要求为String类型的参数，当发送信息至服务器时，内容编码类型默认
+//              为"application/x-www-form-urlencoded"。该默认值适合大多数应用场合。
+// dataFilter：	要求为Function类型的参数，给Ajax返回的原始数据进行预处理的函数。
+//             	提供data和type两个参数。data是Ajax返回的原始数据，type是调用jQuery.ajax时提供的
+//             	dataType参数。函数返回的值将由jQuery进一步处理。
+//             	function(data, type){
+//                 //返回处理后的数据
+//                 return data;
+//             	}
+// global：要求为Boolean类型的参数，默认为true。表示是否触发全局ajax事件。设置为false将不会触发全局
+//         ajax事件，ajaxStart或ajaxStop可用于控制各种ajax事件。
+// ifModified：要求为Boolean类型的参数，默认为false。仅在服务器数据改变时获取新数据。
+//             服务器数据改变判断的依据是Last-Modified头信息。默认值是false，即忽略头信息。
+// jsonp：要求为String类型的参数，在一个jsonp请求中重写回调函数的名字。
+//        该值用来替代在"callback=?"这种GET或POST请求中URL参数里的"callback"部分，例如
+//        {jsonp:'onJsonPLoad'}会导致将"onJsonPLoad=?"传给服务器。
+// username：要求为String类型的参数，用于响应HTTP访问认证请求的用户名。
+// password：要求为String类型的参数，用于响应HTTP访问认证请求的密码。
+// processData：要求为Boolean类型的参数，默认为true。默认情况下，发送的数据将被转换为对象（从技术角度
+//              来讲并非字符串）以配合默认内容类型"application/x-www-form-urlencoded"。如果要发送DOM
+//              树信息或者其他不希望转换的信息，请设置为false。
+// scriptCharset：要求为String类型的参数，只有当请求时dataType为"jsonp"或者"script"，并且type是GET时
+//                才会用于强制修改字符集(charset)。通常在本地和远程的内容编码不同时使用。
+// timeout: 要求为Number类型的参数，设置请求超时时间（毫秒）。此设置将覆盖$.ajaxSetup()方法的全局设
+//          置。
+// async：	要求为Boolean类型的参数，默认设置为true，所有请求均为异步请求。
+//        	如果需要发送同步请求，请将此选项设置为false。注意，同步请求将锁住浏览器，用户其他操作必须等
+//        	待请求完成才可以执行。
+</script>
+</body>
+</html>

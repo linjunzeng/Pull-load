@@ -1,0 +1,21 @@
+<?php 
+	$splnum=36;
+	$page=$_POST["page"];
+	$num=$_POST["num"];
+	$string="";
+	$nomore=false;
+	$text="金丝大司马女你";
+	$arr=array("string"=>$string,"nomore"=>$nomore);
+	for($i=$num*($page-1)+1;$i<=$splnum;$i++)
+	{
+		$string="<li>".$i.$text."</li>";
+		$arr["string"]=$arr["string"].$string;
+		if($i>=$num*$page){break;}
+	}
+	if($page>=ceil($splnum/$num))
+	{
+		$nomore=true;
+		$arr["nomore"]=$nomore;
+	}
+	echo json_encode($arr);
+?>
